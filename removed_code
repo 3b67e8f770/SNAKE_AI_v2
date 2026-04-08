@@ -1,0 +1,10 @@
+
+    s1_pos = [[WIDTH // 4, HEIGHT // 4], [WIDTH // 4 - BLOCK_SIZE, HEIGHT // 4], [WIDTH // 4 - 2 * BLOCK_SIZE, HEIGHT // 4]]
+    SNAKE_1 = Snake("SNAKE_1", s1_pos, COLOR_GREEN, {
+        'up': pygame.K_w, 'down': pygame.K_s, 'left': pygame.K_a, 'right': pygame.K_d
+    }, (BLOCK_SIZE, 0), is_ai=AI_P1)
+
+    s2_pos = [[3 * WIDTH // 4, 3 * HEIGHT // 4], [3 * WIDTH // 4 + BLOCK_SIZE, 3 * HEIGHT // 4], [3 * WIDTH // 4 + 2 * BLOCK_SIZE, 3 * HEIGHT // 4]]
+    SNAKE_2 = Snake("SNAKE_2", s2_pos, COLOR_RED, {
+        'up': pygame.K_UP, 'down': pygame.K_DOWN, 'left': pygame.K_LEFT, 'right': pygame.K_RIGHT
+    }, (-BLOCK_SIZE, 0), is_ai=AI_P2)
