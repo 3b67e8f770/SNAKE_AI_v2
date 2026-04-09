@@ -3,38 +3,40 @@ import pygame
 import random
 import sys
 from snake import Snake
-from collections import deque
 from settings import *
-import math
 
     
 def show_info(surface, snakes, current_speed):
     font = pygame.font.SysFont(F_FONT, 20)
-    mode1 = "AI" if snakes['SNAKE_1'].is_ai else "HUMAN"
-    mode2 = "AI" if snakes['SNAKE_2'].is_ai else "HUMAN"
-    mode3 = "AI" 
-    mode4 = "AI" 
-    
-    val_1 = font.render(f"P1 ({mode1}): {snakes['SNAKE_1'].score}  Rew: {round(snakes['SNAKE_1'].total_reward, 1)}", True, snakes['SNAKE_1'].color)
-    val_2 = font.render(f"P2 ({mode2}): {snakes['SNAKE_2'].score}  Rew: {round(snakes['SNAKE_2'].total_reward, 1)}", True, snakes['SNAKE_2'].color)
-    val_3 = font.render(f"P1 ({mode3}): {snakes['SNAKE_3'].score}  Rew: {round(snakes['SNAKE_3'].total_reward, 1)}", True, snakes['SNAKE_3'].color)
-    val_4 = font.render(f"P2 ({mode4}): {snakes['SNAKE_4'].score}  Rew: {round(snakes['SNAKE_4'].total_reward, 1)}", True, snakes['SNAKE_4'].color)
-    hint = font.render("Press [1] or [2] to switch player mode", True, COLOR_FONT)
-    surf_speed = font.render(f"Speed: {current_speed} (9: + | 0: -)", True, COLOR_FONT)
+    for i, (name, snake) in enumerate(snakes.items()):
+        mode = "AI" if snake.is_ai else "HUM"
+        text = f"{name} ({mode}): {snake.score}  R:{round(snake.total_reward, 1)}"
+        surf = font.render(text, True, snake.color)
 
-    surface.blit(val_1, [10, 10])
-    surface.blit(val_2, [WIDTH - 250, 10])
-    surface.blit(val_3, [10, HEIGHT -30])
-    surface.blit(val_4, [WIDTH - 250, HEIGHT -30])
-    surface.blit(hint, [WIDTH // 2 - 150, HEIGHT - 60])
+        #Players info
+        x = 10 if i % 2 == 0 else WIDTH - 260
+        y = 10 if i < 2 else HEIGHT - 30
+        surface.blit(surf, [x, y])
+    
+        surf_speed = font.render(f"Speed: {current_speed} (9: + | 0: -)", True, COLOR_FONT)
+        surface.blit(surf_speed, [WIDTH // 2 - 70, HEIGHT - 60])
+
+def run_game():
+    current_speed = SPEED
+    while True:
+        current_speed = game_loop(current_speed)
+        if current_speed is None: #end game
+            break
 
 def game_loop(current_speed):
     pygame.init()
     dis = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption('Snake AI - Bot Testing')
+    pygame.display.set_caption('Snake AI - Multisnake')
     clock = pygame.time.Clock()
     
-    snakes = {key: Snake(key, *value) for key, value in PLAYERS.items()}
+    #snakes generations:
+    active_player_keys = list(PLAYERS.keys())[:NUM_PLAYERS]
+    snakes = {key: Snake(key, *PLAYERS[key]) for key in active_player_keys}
   
     # FOOD
     def spawn_food():
@@ -47,6 +49,7 @@ def game_loop(current_speed):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit(); sys.exit()
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1: snakes['SNAKE_1'].is_ai = not snakes['SNAKE_1'].is_ai
                 if event.key == pygame.K_2: snakes['SNAKE_2'].is_ai = not snakes['SNAKE_2'].is_ai
@@ -59,55 +62,61 @@ def game_loop(current_speed):
 
 
                 # Human playing
-                snakes['SNAKE_1'].handle_keys(event.key)
-                snakes['SNAKE_2'].handle_keys(event.key)
+                for s in snakes.values():
+                    if not s.is_ai: s.handle_keys(event.key)
        
         # AI playing
-        for key in snakes:
-            if snakes[key].is_ai: snakes[key].ai_move(food_x, food_y)
-
-            snakes[key].move()
-
-            snakes[key].update_reward("step", (food_x, food_y), snakes[key].score)
+        for s in snakes.values():
+            if s.is_ai: s.ai_move(food_x, food_y)
+            s.move()
+            s.update_reward("STEP", (food_x, food_y), s.score)
 
 
         # collision
-        for s in snakes:
-            for other in snakes:
-                if snakes[s] != snakes[other]:
-                    collision = snakes[s].check_collision(list(snakes[other].body))
-                    if collision:
-                        if collision == "WALL_SELF":
-                            snakes[s].update_reward("DEATH_WALL_SELF")
-                            snakes[s].score -= 2
-                            print(f"Snake {snakes[s]} died...")
-                        elif collision == "OPPONENT":
-                            snakes[s].update_reward("DEATH_OPPONENT")
-                            snakes[s].score -= 2
-                            snakes[other].score += 3
-                            print(f"Snake {snakes[s]} hit an {snakes[other]}")
-                        
-                        full_score = {key: snakes[key].score for key in snakes}
-                        full_score = (sorted(full_score.items(), key=lambda item: item[1], reverse = True))
-                        print(f' Score: {full_score}')
-                        pygame.time.delay(500)
-                        game_loop(current_speed)
+        for name, s in snakes.items():
+            collision_type = None
 
+            self_collision = s.check_collision([]) # empty to check ony itself
+            if self_collision == "WALL_SELF":
+                collision_type = "WALL_SELF"
+
+            # OPPONENTS
+            for other_name, other_s in snakes.items():
+                if name != other_name:
+                    if s.check_collision(list(other_s.body)) == "OPPONENT":
+                        collision_type = "OPPONENT"
+                        other_s.score += 3 # Bonus for blocker
+                        break
+
+            if collision_type:
+                s.update_reward(f"DEATH_{collision_type}")
+                s.score -= 2
+                print(f"{name} died! Type: {collision_type}")
+                full_score = {key: snakes[key].score for key in snakes}
+                full_score = (sorted(full_score.items(), key=lambda item: item[1], reverse = True))
+                print(f' Score: {full_score}')
+
+                for s in snakes.values():
+                    s.decay_epsilon()
+                print(f"{s.name} Epsilon: {round(s.epsilon, 3)}")
+                pygame.time.delay(500)
+                return current_speed 
+	
 
 
         # FOOD?
-        for s in snakes:
-            if snakes[s].x == food_x and snakes[s].y == food_y:
-                snakes[s].score += 1
-                snakes[s].length += 1
-                snakes[s].update_reward("FOOD") # +150
+        for s in snakes.values():
+            if s.x == food_x and s.y == food_y:
+                s.score += 1
+                s.length += 1
+                s.update_reward("FOOD") # +150
                 food_x, food_y = spawn_food()
 
         # Rendering
         dis.fill(COLOR_BG)
         pygame.draw.rect(dis, COLOR_FOOD, [food_x, food_y, BLOCK_SIZE, BLOCK_SIZE])
-        for i in snakes:
-            snakes[i].draw(dis)
+        for s in snakes.values():
+            s.draw(dis)
         
         show_info(dis, snakes, current_speed)
         
@@ -115,4 +124,6 @@ def game_loop(current_speed):
         clock.tick(current_speed)
 
 if __name__ == "__main__":
-    game_loop(SPEED)
+    speed = SPEED
+    while True:
+       speed = game_loop(speed)

@@ -1,9 +1,13 @@
 #!/usr/bin/python3
 import pygame
 
+NUM_PLAYERS = 4
+
 # AI / Human
 AI_P1 = True
 AI_P2 = True
+AI_P3 = True
+AI_P4 = True
 
 # app/settings.py
 BLOCK_SIZE = 20
@@ -51,5 +55,13 @@ PLAYERS = {
     'SNAKE_4' :[[[WIDTH // 4, 3* HEIGHT // 4], [WIDTH // 4, 3 * HEIGHT // 4 + BLOCK_SIZE], [WIDTH // 4, 3 * HEIGHT // 4 + 2* BLOCK_SIZE]], COLOR_YELLOW,  {
         'up': pygame.K_t, 'down': pygame.K_g, 'left': pygame.K_f, 'right': pygame.K_h
     }, (0, BLOCK_SIZE), True]
-
 }
+
+# AI Training
+EPSILON_START = 1.0
+EPSILON_MIN = 0.01
+DECAY_GAMES = 100  # trenings attempts 
+EPSILON_DECAY = (EPSILON_START - EPSILON_MIN) / DECAY_GAMES
+
+# Akcje: [FWD, LEFT, RIGHT]
+ACTION_SPACE = 3

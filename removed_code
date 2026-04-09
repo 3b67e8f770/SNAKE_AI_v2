@@ -8,3 +8,40 @@
     SNAKE_2 = Snake("SNAKE_2", s2_pos, COLOR_RED, {
         'up': pygame.K_UP, 'down': pygame.K_DOWN, 'left': pygame.K_LEFT, 'right': pygame.K_RIGHT
     }, (-BLOCK_SIZE, 0), is_ai=AI_P2)
+
+
+
+
+            for s in snakes:
+            for other in snakes:
+                if snakes[other].name == snakes[s].name:
+                    continue
+                else:
+                    collision = snakes[s].check_collision(list(snakes[other].body))
+                    if collision:
+                        if collision == "WALL_SELF":
+                            snakes[s].update_reward("DEATH_WALL_SELF")
+                            print(f"Snake {snakes[s]} died... Score: {snakes[s].score}")
+                        elif collision == "OPPONENT":
+                            snakes[s].update_reward("DEATH_OPPONENT")
+                            print(f"Snake {snakes[s]} hit an opponent Score: {snakes[s].score}")
+                
+                    pygame.time.delay(500)
+                    game_loop(current_speed) #
+
+
+
+                    
+        # collision
+        for s, other in [(snakes['SNAKE_1'], snakes['SNAKE_2']), (snakes['SNAKE_2'], snakes['SNAKE_1'])]:
+            collision = s.check_collision(list(other.body))
+            if collision:
+                if collision == "WALL_SELF":
+                    s.update_reward("DEATH_WALL_SELF")
+                    print(f"Snake {s} died... Score: {s.score}")
+                elif collision == "OPPONENT":
+                    s.update_reward("DEATH_OPPONENT")
+                    print(f"Snake {s} hit an opponent Score: {s.score}")
+                
+                pygame.time.delay(500)
+                game_loop(current_speed) #

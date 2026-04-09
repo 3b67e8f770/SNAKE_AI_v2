@@ -19,15 +19,28 @@ class Snake:
         self.score = 0
         self.total_reward = 0  
         self.prev_distance = 0 
+        self.epsilon = EPSILON_START
+        self.games_played = 0
 
     def __str__(self):
         return self.name
+    
+    def get_action(self, state):
+        # 1. (Exploration)
+        if self.is_ai and random.random() < self.epsilon:
+            # 0 (FWD), 1 (LEFT), 2 (RIGH)
+            return random.randint(0, 2)
+        
+        # 2. NEURAL NETWORK
+        # FWD for now
+        return 0
 
     def get_distance_to_food(self, food_x, food_y):
         # distance  |x1 - x2| + |y1 - y2|
         return abs(self.x - food_x) + abs(self.y - food_y)
     
     def update_reward(self, event_type, food_pos=None, other_score=0):
+        event_type = event_type.upper()
         reward = 0
 
         # rewards
@@ -86,13 +99,29 @@ class Snake:
             # choice from valids
             self.dx, self.dy = random.choice(valid_directions)
 
+    def move_by_action(self, action):
+        #0 - FWD, 1-LEFT, 2- RIGHT
+
+        #clock_wise from UP
+        clock_wise = [(0, -BLOCK_SIZE), (BLOCK_SIZE, 0), (0, BLOCK_SIZE), (-BLOCK_SIZE, 0)]
+        idx = clock_wise.index((self.dx, self.dy))
+
+        if action == 0:   # FWD
+            new_dir = clock_wise[idx]
+        elif action == 1: # LEFT
+            new_dir = clock_wise[(idx - 1) % 4]
+        elif action == 2: # RIGHT
+            new_dir = clock_wise[(idx + 1) % 4]
+
+        self.dx, self.dy = new_dir
+        self.move() 
+
     def move(self):
         self.x += self.dx
         self.y += self.dy
         self.body.appendleft([self.x, self.y])
         if len(self.body) > self.length:
             self.body.pop()
-
     def draw(self, surface):
         for segment in self.body:
             pygame.draw.rect(surface, self.color, [segment[0], segment[1], BLOCK_SIZE, BLOCK_SIZE])
@@ -107,3 +136,9 @@ class Snake:
         if [self.x, self.y] in other_snake_body:
             return "OPPONENT"
         return None
+    
+    def decay_epsilon(self):
+        # EPSILON update
+        if self.epsilon > EPSILON_MIN:
+            self.epsilon -= EPSILON_DECAY
+            self.games_played += 1
